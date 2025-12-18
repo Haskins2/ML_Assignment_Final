@@ -4,20 +4,22 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import argparse
+import json
 from pathlib import Path
 
+
 # hyperparameters
-batch_size = 64 # how many independent sequences will we process in parallel?
-block_size = 32 # what is the maximum context length for predictions?
-max_iters = 100
-eval_interval = 10
-learning_rate = 3e-4
+batch_size = 32 # Reduced: dataset is small, smaller batches help generalisation 
+block_size = 24 # Reduced: equations are short, less context needed
+max_iters = 1000 # default 1000
+eval_interval = 5
+learning_rate = 1e-3 # Increased: smaller models can handle higher learning rates
 device = 'mps' if torch.backends.mps.is_available() else 'cpu' #mac
 eval_iters = 200
-n_embd = 384
-n_head = 6
-n_layer = 6
-dropout = 0.2
+n_embd = 64 # Drastically reduced: prevents memorisation, forces learning logic
+n_head = 4
+n_layer = 4 # Reduced: shallow network is sufficient for single-digit arithmetic
+dropout = 0.0 # Set to 0: Math is deterministic, noise hinders exact learning, no need for noise
 # ------------
 
 print(f"Using device: {device}")
@@ -26,7 +28,13 @@ torch.manual_seed(1337)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', type=str, default='input_math.txt')
+parser.add_argument('--model_name', type=str, nargs='?', default='gpt_math_model.pth')
+parser.add_argument('--max_iters', type=int, default=max_iters)
 args = parser.parse_args()
+
+print(f"Loading dataset from {args.dataset}")
+print(f"Model will be saved as {args.model_name}")
+print(f"Training for {args.max_iters} iterations")
 
 BASE_DIR = Path(__file__).resolve().parent
 DATASET_DIR = BASE_DIR / "datasets"
@@ -122,9 +130,9 @@ class FeedFoward(nn.Module):
     def __init__(self, n_embd):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(n_embd, 4 * n_embd),
+            nn.Linear(n_embd, 4 * n_embd, bias=False), # Disabled Bias
             nn.ReLU(),
-            nn.Linear(4 * n_embd, n_embd),
+            nn.Linear(4 * n_embd, n_embd, bias=False), # Disabled Bias
             nn.Dropout(dropout),
         )
 
@@ -232,7 +240,47 @@ for iter in range(max_iters):
     loss.backward()
     optimizer.step()
 
+# Save the model
+MODELS_DIR = BASE_DIR / "models"
+MODELS_DIR.mkdir(parents=True, exist_ok=True)
+model_path = MODELS_DIR / f"{args.model_name}.pth"
+
+print(f"Saving model {args.model_name} to {model_path}")
+torch.save({
+    'model_state_dict': model.state_dict(),
+    'optimizer_state_dict': optimizer.state_dict(),
+    'stoi': stoi,
+    'itos': itos,
+    'chars': chars,
+    'hyperparameters': {
+        'batch_size': batch_size,
+        'block_size': block_size,
+        'max_iters': max_iters,
+        'learning_rate': learning_rate,
+        'n_embd': n_embd,
+        'n_head': n_head,
+        'n_layer': n_layer,
+        'dropout': dropout
+    }
+}, model_path)
+
+# Save hyperparameters to JSON
+hyperparams_path = MODELS_DIR / f"{args.model_name}_hyperparams.json"
+print(f"Saving hyperparameters to {hyperparams_path}")
+with open(hyperparams_path, 'w') as f:
+    json.dump({
+        'batch_size': batch_size,
+        'block_size': block_size,
+        'max_iters': max_iters,
+        'learning_rate': learning_rate,
+        'n_embd': n_embd,
+        'n_head': n_head,
+        'n_layer': n_layer,
+        'dropout': dropout,
+        'vocab_size': vocab_size,
+        'device': device
+    }, f, indent=4)
+
 # generate from the model
 context = torch.zeros((1, 1), dtype=torch.long, device=device)
 print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
-#open('more.txt', 'w').write(decode(m.generate(context, max_new_tokens=10000)[0].tolist()))
