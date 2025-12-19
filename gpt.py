@@ -12,15 +12,15 @@ from pathlib import Path
 # Defaults set to "Target" values
 batch_size_default = 64
 block_size_default = 32
-max_iters_default = 2000
-eval_interval_default = 5
+max_iters_default = 5000
+eval_interval_default = 500
 learning_rate_default = 3e-4
 n_embd_default = 128
 n_head_default = 4
 n_layer_default = 4
 dropout_default = 0.0
 device = 'mps' if torch.backends.mps.is_available() else 'cpu'
-eval_iters = 500
+eval_iters = 200
 
 # ------------
 
