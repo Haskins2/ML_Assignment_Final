@@ -9,17 +9,19 @@ from pathlib import Path
 
 
 # hyperparameters
-batch_size = 32 # Reduced: dataset is small, smaller batches help generalisation 
-block_size = 24 # Reduced: equations are short, less context needed
-max_iters = 1000 # default 1000
-eval_interval = 5
-learning_rate = 1e-3 # Increased: smaller models can handle higher learning rates
-device = 'mps' if torch.backends.mps.is_available() else 'cpu' #mac
-eval_iters = 200
-n_embd = 64 # Drastically reduced: prevents memorisation, forces learning logic
-n_head = 4
-n_layer = 4 # Reduced: shallow network is sufficient for single-digit arithmetic
-dropout = 0.0 # Set to 0: Math is deterministic, noise hinders exact learning, no need for noise
+# Defaults set to "Target" values
+batch_size_default = 64
+block_size_default = 32
+max_iters_default = 2000
+eval_interval_default = 5
+learning_rate_default = 3e-4
+n_embd_default = 128
+n_head_default = 4
+n_layer_default = 4
+dropout_default = 0.0
+device = 'mps' if torch.backends.mps.is_available() else 'cpu'
+eval_iters = 500
+
 # ------------
 
 print(f"Using device: {device}")
@@ -29,8 +31,26 @@ torch.manual_seed(1337)
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', type=str, default='input_math.txt')
 parser.add_argument('--model_name', type=str, nargs='?', default='gpt_math_model.pth')
-parser.add_argument('--max_iters', type=int, default=max_iters)
+parser.add_argument('--max_iters', type=int, default=max_iters_default)
+parser.add_argument('--batch_size', type=int, default=batch_size_default)
+parser.add_argument('--block_size', type=int, default=block_size_default)
+parser.add_argument('--eval_interval', type=int, default=eval_interval_default)
+parser.add_argument('--learning_rate', type=float, default=learning_rate_default)
+parser.add_argument('--n_embd', type=int, default=n_embd_default)
+parser.add_argument('--n_head', type=int, default=n_head_default)
+parser.add_argument('--n_layer', type=int, default=n_layer_default)
+parser.add_argument('--dropout', type=float, default=dropout_default)
 args = parser.parse_args()
+
+batch_size = args.batch_size
+block_size = args.block_size
+max_iters = args.max_iters
+eval_interval = args.eval_interval
+learning_rate = args.learning_rate
+n_embd = args.n_embd
+n_head = args.n_head
+n_layer = args.n_layer
+dropout = args.dropout
 
 print(f"Loading dataset from {args.dataset}")
 print(f"Model will be saved as {args.model_name}")

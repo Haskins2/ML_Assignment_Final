@@ -53,8 +53,9 @@ def generate_single_digit_division():
 
     for a in range(MIN_DIGIT, MAX_DIGIT + 1):
         for b in range(1, MAX_DIGIT + 1):  # avoid division by zero
-            result = a // b
-            samples.append(f"{a}/{b}={result}")
+            if a % b == 0:
+                result = a // b
+                samples.append(f"{a}/{b}={result}")
 
     return samples
 

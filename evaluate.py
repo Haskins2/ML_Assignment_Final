@@ -125,7 +125,7 @@ class GPTLanguageModel(nn.Module):
             idx = torch.cat((idx, idx_next), dim=1)
         return idx
 
-def evaluate_model(model, stoi, itos, num_samples=50):
+def evaluate_model(model, stoi, itos, num_samples=500, verbose=False):
     """
     Generates random math problems and checks if the model solves them correctly.
     """
@@ -133,29 +133,32 @@ def evaluate_model(model, stoi, itos, num_samples=50):
     correct = 0
     total = 0
     
-    # Define the problem space (integers 1-9, basic operators)
+    # Define the problem space (integers 0-9, basic operators)
     operators = ['+', '-', '*', '/']
     
     print(f"\nEvaluating on {num_samples} random examples...")
     print("-" * 40)
     
     for _ in range(num_samples):
-        a = random.randint(1, 9)
-        b = random.randint(1, 9)
         op = random.choice(operators)
-        
-        # Calculate expected result
-        if op == '+':
-            res = a + b
-        elif op == '-':
-            res = a - b
-        elif op == '*':
-            res = a * b
-        elif op == '/':
-            # Construct valid division for integer arithmetic
-            res = a 
-            a = a * b 
-            # a/b = res
+
+        if op == '/':
+            while True:
+                a = random.randint(0, 9)
+                b = random.randint(1, 9)
+                if a % b == 0:
+                    res = a // b
+                    break
+        else:
+            a = random.randint(0, 9)
+            b = random.randint(0, 9)
+
+            if op == '+':
+                res = a + b
+            elif op == '-':
+                res = a - b
+            elif op == '*':
+                res = a * b
             
         prompt = f"{a}{op}{b}="
         expected = str(res)
@@ -182,7 +185,8 @@ def evaluate_model(model, stoi, itos, num_samples=50):
         if is_correct:
             correct += 1
         
-        print(f"Prompt: {prompt:<10} | Expected: {expected:<5} | Predicted: {predicted:<5} | {'✓' if is_correct else '✗'}")
+        if verbose:
+            print(f"Q: {prompt} | Predicted: {predicted} | Expected: {expected} | {'Correct' if is_correct else 'Incorrect'}")
         total += 1
 
     accuracy = (correct / total) * 100 if total > 0 else 0
@@ -195,11 +199,13 @@ def main():
     
     parser = argparse.ArgumentParser(description='Evaluate GPT Math Model')
     parser.add_argument('--model', type=str, default='gpt_math_model.pth', help='Name of the model file in models/ directory')
+    parser.add_argument('--verbose', action='store_true', default=False, help='Enable verbose output')
+    parser.add_argument('--iterations', type=int, default=500, help='Number of evaluation samples to run')
     args = parser.parse_args()
 
     BASE_DIR = Path(__file__).resolve().parent
-    MODELS_DIR = BASE_DIR / "models"
-    model_path = MODELS_DIR / args.model
+    # MODELS_DIR = BASE_DIR / "models"
+    model_path = BASE_DIR / args.model
 
     if not model_path.exists():
         print(f"Error: Model file not found at {model_path}")
@@ -231,7 +237,7 @@ def main():
     model.to(device)
     
     # Run evaluation
-    evaluate_model(model, stoi, itos)
+    evaluate_model(model, stoi, itos, verbose=args.verbose, num_samples=args.iterations)
 
 if __name__ == "__main__":
     main()
