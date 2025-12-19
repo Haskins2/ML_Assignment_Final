@@ -2,11 +2,12 @@
 
 import argparse
 from pathlib import Path
+import random
 
 # argparse practice
 parser = argparse.ArgumentParser(description="Generate a simple math dataset.")
-parser.add_argument("--basic", action="store_true", help="Generate basic single-digit addition problems.")
-parser.add_argument("--advanced", action="store_true", help="Generate advanced math problems (TODO).")
+parser.add_argument("--basic", action="store_true", help="Generate basic single-digit math problems.")
+parser.add_argument("--advanced", action="store_true", help="Generate advanced two-digit math problems.")
 args = parser.parse_args()
 
 
@@ -15,66 +16,60 @@ DATASET_DIR = BASE_DIR / "datasets"
 DATASET_NAME = "input_math.txt"
 OUTPUT_FILE = DATASET_DIR / DATASET_NAME
 
-MIN_DIGIT = 0
-MAX_DIGIT = 9
-
-def generate_single_digit_addition():
+def generate_addition(min_val, max_val):
     samples = []
-
-    for a in range(MIN_DIGIT, MAX_DIGIT + 1):
-        for b in range(MIN_DIGIT, MAX_DIGIT + 1):
+    for a in range(min_val, max_val + 1):
+        for b in range(min_val, max_val + 1):
             result = a + b
             samples.append(f"{a}+{b}={result}")
-
     return samples
 
-def generate_single_digit_subtraction():
+def generate_subtraction(min_val, max_val):
     samples = []
-
-    for a in range(MIN_DIGIT, MAX_DIGIT + 1):
-        for b in range(MIN_DIGIT, MAX_DIGIT + 1):
+    for a in range(min_val, max_val + 1):
+        for b in range(min_val, max_val + 1):
             result = a - b
             samples.append(f"{a}-{b}={result}")
-
     return samples
 
-def generate_single_digit_multiplication():
+def generate_multiplication(min_val, max_val):
     samples = []
-
-    for a in range(MIN_DIGIT, MAX_DIGIT + 1):
-        for b in range(MIN_DIGIT, MAX_DIGIT + 1):
+    for a in range(min_val, max_val + 1):
+        for b in range(min_val, max_val + 1):
             result = a * b
             samples.append(f"{a}*{b}={result}")
-
     return samples
 
-def generate_single_digit_division():
+def generate_division(min_val, max_val):
     samples = []
-
-    for a in range(MIN_DIGIT, MAX_DIGIT + 1):
-        for b in range(1, MAX_DIGIT + 1):  # avoid division by zero
+    for a in range(min_val, max_val + 1):
+        for b in range(1, max_val + 1):  # avoid division by zero
             if a % b == 0:
                 result = a // b
                 samples.append(f"{a}/{b}={result}")
-
     return samples
 
 def jumble_samples(samples):
-    import random
     random.shuffle(samples)
     return samples
 
 
 def main():
+    samples = []
     if args.basic:
-        print("\nGenerating basic single-digit addition problems...")
-        samples = generate_single_digit_addition()
-        samples += generate_single_digit_subtraction()
-        samples += generate_single_digit_multiplication()
-        samples += generate_single_digit_division()
+        print("\nGenerating basic single-digit math problems...")
+        min_val, max_val = 0, 9
+        samples += generate_addition(min_val, max_val)
+        samples += generate_subtraction(min_val, max_val)
+        samples += generate_multiplication(min_val, max_val)
+        samples += generate_division(min_val, max_val)
     elif args.advanced:
-        print("\nAdvanced math problem generation is not yet implemented.")
-        return
+        print("\nGenerating advanced two-digit math problems...")
+        min_val, max_val = 0, 99
+        samples += generate_addition(min_val, max_val)
+        samples += generate_subtraction(min_val, max_val)
+        samples += generate_multiplication(min_val, max_val)
+        samples += generate_division(min_val, max_val)
     else:
         print("\nSpecify either --basic or --advanced")
         return

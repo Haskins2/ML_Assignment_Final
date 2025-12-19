@@ -125,7 +125,7 @@ class GPTLanguageModel(nn.Module):
             idx = torch.cat((idx, idx_next), dim=1)
         return idx
 
-def evaluate_model(model, stoi, itos, num_samples=500, verbose=False):
+def evaluate_model(model, stoi, itos, num_samples=500, verbose=False, advanced=False):
     """
     Generates random math problems and checks if the model solves them correctly.
     """
@@ -133,10 +133,11 @@ def evaluate_model(model, stoi, itos, num_samples=500, verbose=False):
     correct = 0
     total = 0
     
-    # Define the problem space (integers 0-9, basic operators)
+    # Define the problem space
     operators = ['+', '-', '*', '/']
+    max_val = 99 if advanced else 9
     
-    print(f"\nEvaluating on {num_samples} random examples...")
+    print(f"\nEvaluating on {num_samples} random examples (Advanced: {advanced})...")
     print("-" * 40)
     
     for _ in range(num_samples):
@@ -144,14 +145,14 @@ def evaluate_model(model, stoi, itos, num_samples=500, verbose=False):
 
         if op == '/':
             while True:
-                a = random.randint(0, 9)
-                b = random.randint(1, 9)
+                a = random.randint(0, max_val)
+                b = random.randint(1, max_val)
                 if a % b == 0:
                     res = a // b
                     break
         else:
-            a = random.randint(0, 9)
-            b = random.randint(0, 9)
+            a = random.randint(0, max_val)
+            b = random.randint(0, max_val)
 
             if op == '+':
                 res = a + b
@@ -201,6 +202,7 @@ def main():
     parser.add_argument('--model', type=str, default='gpt_math_model.pth', help='Name of the model file in models/ directory')
     parser.add_argument('--verbose', action='store_true', default=False, help='Enable verbose output')
     parser.add_argument('--iterations', type=int, default=500, help='Number of evaluation samples to run')
+    parser.add_argument('--advanced', action='store_true', help='Evaluate on advanced math problems (0-99)')
     args = parser.parse_args()
 
     BASE_DIR = Path(__file__).resolve().parent
@@ -237,7 +239,7 @@ def main():
     model.to(device)
     
     # Run evaluation
-    evaluate_model(model, stoi, itos, verbose=args.verbose, num_samples=args.iterations)
+    evaluate_model(model, stoi, itos, verbose=args.verbose, num_samples=args.iterations, advanced=args.advanced)
 
 if __name__ == "__main__":
     main()
