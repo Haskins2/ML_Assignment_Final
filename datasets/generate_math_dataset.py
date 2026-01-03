@@ -49,6 +49,40 @@ def generate_division(min_val, max_val):
                 samples.append(f"{a}/{b}={result}")
     return samples
 
+def generate_bimdas_3_inputs(min_val, max_val, count=5000):
+    samples = []
+    ops = ['+', '-', '*']
+    
+    for _ in range(count):
+        a = random.randint(min_val, max_val)
+        b = random.randint(min_val, max_val)
+        c = random.randint(min_val, max_val)
+        
+        op1 = random.choice(ops)
+        op2 = random.choice(ops)
+        
+        # Patterns:
+        # 1. a op1 b op2 c (standard precedence)
+        # 2. (a op1 b) op2 c
+        # 3. a op1 (b op2 c)
+        
+        pattern = random.choice([1, 2, 3])
+        
+        if pattern == 1:
+            expr = f"{a}{op1}{b}{op2}{c}"
+        elif pattern == 2:
+            expr = f"({a}{op1}{b}){op2}{c}"
+        else:
+            expr = f"{a}{op1}({b}{op2}{c})"
+            
+        try:
+            res = eval(expr)
+            samples.append(f"{expr}={res}")
+        except:
+            pass
+            
+    return samples
+
 def jumble_samples(samples):
     random.shuffle(samples)
     return samples
@@ -63,6 +97,7 @@ def main():
         samples += generate_subtraction(min_val, max_val)
         samples += generate_multiplication(min_val, max_val)
         samples += generate_division(min_val, max_val)
+        samples += generate_bimdas_3_inputs(min_val, max_val, count=2000)
     elif args.advanced:
         print("\nGenerating advanced two-digit math problems...")
         min_val, max_val = 0, 99
@@ -70,6 +105,7 @@ def main():
         samples += generate_subtraction(min_val, max_val)
         samples += generate_multiplication(min_val, max_val)
         samples += generate_division(min_val, max_val)
+        samples += generate_bimdas_3_inputs(min_val, max_val, count=10000)
     else:
         print("\nSpecify either --basic or --advanced")
         return

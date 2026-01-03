@@ -141,28 +141,53 @@ def evaluate_model(model, stoi, itos, num_samples=500, verbose=False, advanced=F
     print("-" * 40)
     
     for _ in range(num_samples):
-        op = random.choice(operators)
-
-        if op == '/':
-            while True:
-                a = random.randint(0, max_val)
-                b = random.randint(1, max_val)
-                if a % b == 0:
-                    res = a // b
-                    break
+        # 30% chance for 3-input BIMDAS
+        if random.random() < 0.3:
+             ops = ['+', '-', '*']
+             a = random.randint(0, max_val)
+             b = random.randint(0, max_val)
+             c = random.randint(0, max_val)
+             
+             op1 = random.choice(ops)
+             op2 = random.choice(ops)
+             pattern = random.choice([1, 2, 3])
+             
+             if pattern == 1:
+                 expr = f"{a}{op1}{b}{op2}{c}"
+             elif pattern == 2:
+                 expr = f"({a}{op1}{b}){op2}{c}"
+             else:
+                 expr = f"{a}{op1}({b}{op2}{c})"
+             
+             try:
+                 res = eval(expr)
+                 prompt = f"{expr}="
+                 expected = str(res)
+             except:
+                 continue
         else:
-            a = random.randint(0, max_val)
-            b = random.randint(0, max_val)
+            op = random.choice(operators)
 
-            if op == '+':
-                res = a + b
-            elif op == '-':
-                res = a - b
-            elif op == '*':
-                res = a * b
-            
-        prompt = f"{a}{op}{b}="
-        expected = str(res)
+            if op == '/':
+                while True:
+                    a = random.randint(0, max_val)
+                    b = random.randint(1, max_val)
+                    if a % b == 0:
+                        res = a // b
+                        break
+            else:
+                a = random.randint(0, max_val)
+                b = random.randint(0, max_val)
+
+                if op == '+':
+                    res = a + b
+                elif op == '-':
+                    res = a - b
+                elif op == '*':
+                    res = a * b
+                
+            prompt = f"{a}{op}{b}="
+            expected = str(res)
         
         # Check if characters are in vocab
         if not all(c in stoi for c in prompt):
