@@ -5,6 +5,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 import argparse
 import json
+import re
 from pathlib import Path
 
 
@@ -63,14 +64,33 @@ dataset_path = DATASET_DIR / args.dataset
 with open(dataset_path, 'r', encoding='utf-8') as f:
     text = f.read()
 
-# here are all the unique characters that occur in this text
-chars = sorted(list(set(text)))
-vocab_size = len(chars)
-# create a mapping from characters to integers
-stoi = { ch:i for i,ch in enumerate(chars) }
-itos = { i:ch for i,ch in enumerate(chars) }
-encode = lambda s: [stoi[c] for c in s] # encoder: take a string, output a list of integers
-decode = lambda l: ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
+if 'boolean' in args.dataset:
+    print("Using boolean-optimized tokenizer and hyperparameters")
+    # Tokenizer: split by words, =, newline, and space
+    # This treats 'True', 'False', 'AND', 'OR', 'XOR', 'NOT', '=', '\n', ' ' as tokens
+    tokens_raw = re.findall(r'\w+|[=]|\n| ', text)
+    chars = sorted(list(set(tokens_raw)))
+    vocab_size = len(chars)
+    stoi = { ch:i for i,ch in enumerate(chars) }
+    itos = { i:ch for i,ch in enumerate(chars) }
+    encode = lambda s: [stoi[c] for c in re.findall(r'\w+|[=]|\n| ', s)]
+    decode = lambda l: ''.join([itos[i] for i in l])
+
+    # Optimize hyperparameters for boolean logic if they are still defaults
+    # Boolean logic is deterministic and simple, so we need less capacity and no dropout
+    if n_embd == n_embd_default: n_embd = 128 # Increased back to 128 for better capacity
+    if n_layer == n_layer_default: n_layer = 4 # Increased back to 4
+    if dropout == dropout_default: dropout = 0.0
+    # block_size 32 is sufficient for these short lines
+else:
+    # here are all the unique characters that occur in this text
+    chars = sorted(list(set(text)))
+    vocab_size = len(chars)
+    # create a mapping from characters to integers
+    stoi = { ch:i for i,ch in enumerate(chars) }
+    itos = { i:ch for i,ch in enumerate(chars) }
+    encode = lambda s: [stoi[c] for c in s] # encoder: take a string, output a list of integers
+    decode = lambda l: ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
 
 # Train and test splits
 data = torch.tensor(encode(text), dtype=torch.long)
@@ -263,7 +283,10 @@ for iter in range(max_iters):
 # Save the model
 MODELS_DIR = BASE_DIR / "models"
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
-model_path = MODELS_DIR / f"{args.model_name}.pth"
+model_name = args.model_name
+if not model_name.endswith('.pth'):
+    model_name += '.pth'
+model_path = MODELS_DIR / model_name
 
 print(f"Saving model {args.model_name} to {model_path}")
 torch.save({
@@ -285,7 +308,7 @@ torch.save({
 }, model_path)
 
 # Save hyperparameters to JSON
-hyperparams_path = MODELS_DIR / f"{args.model_name}_hyperparams.json"
+hyperparams_path = MODELS_DIR / f"{model_name}_hyperparams.json"
 print(f"Saving hyperparameters to {hyperparams_path}")
 with open(hyperparams_path, 'w') as f:
     json.dump({
